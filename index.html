@@ -1,0 +1,655 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>צעדה</title>
+<meta name="theme-color" content="#16201B">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Secular+One&family=Assistant:wght@400;600;700;800&family=Barlow+Condensed:wght@500;600;700&display=swap">
+<style>
+/* Layout: one-thumb phone app — tab bar at the bottom, big condensed numerals, route drawn on a 100 m survey grid.
+   Motif: the Israel National Trail blaze (white / blue / orange stripes) marks starts, the brand and progress. */
+:root{
+  --bg:#EEF2EE; --surface:#FFFFFF; --sunk:#E3E9E4; --ink:#16201B; --muted:#5A6861; --line:#D3DBD5;
+  --orange:#E0611A; --orange-soft:#FBE3D3; --blue:#2465A8; --blue-soft:#DCE8F5; --blaze-white:#FFFFFF;
+  --good:#2E8B57; --warn:#B7791F; --bad:#C0392B;
+  --f-display:"Secular One","Assistant",system-ui,sans-serif;
+  --f-body:"Assistant",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+  --f-num:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --r:14px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F1512; --surface:#18201C; --sunk:#202A25; --ink:#E7EDE9; --muted:#95A39C; --line:#2B3630;
+  --orange:#FF8740; --orange-soft:#3A2617; --blue:#6EA9EA; --blue-soft:#18273A; --blaze-white:#E7EDE9;
+  --good:#5CC48A; --warn:#E3B04B; --bad:#EE6B5E; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0F1512; --surface:#18201C; --sunk:#202A25; --ink:#E7EDE9; --muted:#95A39C; --line:#2B3630;
+  --orange:#FF8740; --orange-soft:#3A2617; --blue:#6EA9EA; --blue-soft:#18273A; --blaze-white:#E7EDE9;
+  --good:#5CC48A; --warn:#E3B04B; --bad:#EE6B5E; color-scheme:dark}
+
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+:root{padding-top:env(safe-area-inset-top,0px)}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.45;
+  -webkit-tap-highlight-color:transparent}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.app{max-width:520px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:12px calc(96px + env(safe-area-inset-bottom,0px))}
+.num{font-family:var(--f-num);font-variant-numeric:tabular-nums;letter-spacing:.01em}
+h1,h2,h3{font-family:var(--f-display);font-weight:400;margin:0;text-wrap:balance}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.muted{color:var(--muted)}
+
+/* header */
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:6px 14px}
+.brand{display:flex;align-items:center;gap:10px}
+.brand h1{font-size:1.6rem;line-height:1}
+.blaze{display:inline-flex;flex-direction:column;width:22px;height:24px;border-radius:3px;overflow:hidden;
+  box-shadow:0 0 0 1px var(--line)}
+.blaze i{flex:1;display:block}
+.blaze i:nth-child(1){background:var(--blaze-white)} .blaze i:nth-child(2){background:var(--blue)} .blaze i:nth-child(3){background:var(--orange)}
+.date-chip{font-size:.9rem;color:var(--muted)}
+.store-chip{font-size:.75rem;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:2px 8px}
+
+.screen{display:flex;flex-direction:column;gap:14px}
+.card{background:var(--surface);border-radius:var(--r);padding:16px}
+.label{font-size:.78rem;letter-spacing:.06em;color:var(--muted);font-weight:700}
+
+.banner{background:var(--blue-soft);color:var(--ink);border-radius:var(--r);padding:12px 14px;font-size:.92rem;
+  display:flex;gap:10px;align-items:flex-start}
+.banner b{font-weight:800}
+
+/* today ring */
+.today{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center}
+.ring{position:relative;width:150px;height:150px}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring .center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.ring .big{font-size:2.5rem;font-weight:700;line-height:1}
+.ring .of{font-size:.82rem;color:var(--muted)}
+.today-side{display:flex;flex-direction:column;gap:10px;min-width:0}
+.kv{display:flex;justify-content:space-between;align-items:baseline;gap:8px;border-bottom:1px solid var(--line);padding-bottom:6px}
+.kv:last-child{border-bottom:0}
+.kv .v{font-size:1.45rem;font-weight:600}
+.kv .v small{font-family:var(--f-body);font-size:.8rem;color:var(--muted);font-weight:600;margin-inline-start:3px}
+
+.streak{display:flex;align-items:center;gap:12px}
+.streak .count{font-size:2.2rem;font-weight:700;color:var(--orange);line-height:1}
+.dots{display:flex;gap:6px;margin-inline-start:auto}
+.dot{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:.72rem;font-weight:700;
+  background:var(--sunk);color:var(--muted)}
+.dot.hit{background:var(--orange);color:#fff}
+.dot.today{box-shadow:0 0 0 2px var(--blue)}
+
+.cta{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;border:0;border-radius:999px;
+  background:var(--orange);color:#fff;font-family:var(--f-display);font-size:1.3rem;padding:16px 20px}
+.cta:active{transform:scale(.98)}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:10px 16px;font-weight:700}
+.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn.danger{color:var(--bad)}
+.btn.small{padding:6px 12px;font-size:.88rem}
+
+/* walk list */
+.walk{display:grid;grid-template-columns:72px 1fr;gap:12px;align-items:center;padding-block:12px;border-bottom:1px solid var(--line)}
+.walk:last-child{border-bottom:0}
+.walk canvas{width:72px;height:72px;border-radius:10px;background:var(--sunk)}
+.walk-main{min-width:0;display:flex;flex-direction:column;gap:2px}
+.walk-title{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.walk-title b{font-weight:800}
+.walk-stats{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:.92rem;color:var(--muted)}
+.walk-stats .num{color:var(--ink);font-size:1.08rem;font-weight:600}
+.tag{font-size:.72rem;font-weight:700;border-radius:999px;padding:1px 8px;background:var(--sunk);color:var(--muted)}
+.tag.gps{background:var(--blue-soft);color:var(--blue)}
+.walk-actions{display:flex;gap:8px;margin-top:6px}
+
+/* chart */
+.chart-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:8px}
+.chart svg{width:100%;height:auto;display:block}
+.totals{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.total{background:var(--sunk);border-radius:12px;padding:10px}
+.total .v{font-size:1.5rem;font-weight:600;line-height:1.1}
+.seg{display:inline-flex;background:var(--sunk);border-radius:999px;padding:3px}
+.seg button{border:0;background:transparent;border-radius:999px;padding:5px 12px;font-weight:700;font-size:.88rem;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink)}
+
+/* forms */
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-weight:700;font-size:.92rem}
+.grid2>*{min-width:0}
+.field input{width:100%;min-width:0;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:10px;padding:10px 12px;font:inherit;font-family:var(--f-num);font-size:1.15rem}
+.field .hint{font-size:.82rem;color:var(--muted)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(92px + env(safe-area-inset-bottom,0px));
+  background:var(--ink);color:var(--bg);border-radius:999px;padding:10px 18px;font-weight:700;z-index:40;font-size:.95rem}
+
+/* tab bar */
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);
+  padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
+.tabbar-in{max-width:520px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr auto 1fr 1fr;align-items:center}
+.tab{border:0;background:transparent;display:flex;flex-direction:column;align-items:center;gap:2px;padding:9px 0 8px;
+  font-size:.75rem;font-weight:700;color:var(--muted)}
+.tab svg{width:22px;height:22px}
+.tab[aria-current="page"]{color:var(--orange)}
+.go{width:62px;height:62px;border-radius:50%;border:0;background:var(--orange);color:#fff;margin-top:-22px;
+  display:grid;place-items:center;box-shadow:0 6px 18px rgba(224,97,26,.35);font-family:var(--f-display);font-size:1rem}
+
+/* live walk */
+.live{position:fixed;inset:0;z-index:30;background:var(--bg);display:flex;flex-direction:column;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.live-in{max-width:520px;width:100%;margin:0 auto;flex:1;display:flex;flex-direction:column;gap:12px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px 16px;min-height:0}
+.live-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.gps{display:inline-flex;align-items:center;gap:6px;font-size:.85rem;font-weight:700;border-radius:999px;padding:4px 10px;background:var(--sunk)}
+.gps i{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.gps.ok i{background:var(--good)} .gps.weak i{background:var(--warn)} .gps.off i{background:var(--bad)}
+.map{position:relative;flex:1;min-height:180px;border-radius:var(--r);background:var(--surface);overflow:hidden}
+.map canvas{position:absolute;inset:0;width:100%;height:100%}
+.map .scale{position:absolute;bottom:8px;inset-inline-start:10px;font-size:.78rem;color:var(--muted);font-weight:700}
+.map .empty{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:20px;color:var(--muted)}
+.timer{text-align:center;font-size:4.4rem;font-weight:700;line-height:1}
+.live-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+.live-stats .v{font-size:2rem;font-weight:600;line-height:1.05}
+.live-stats .k{font-size:.8rem;color:var(--muted);font-weight:700}
+.live-ctrl{display:flex;gap:10px}
+.live-ctrl button{flex:1;border:0;border-radius:999px;padding:16px;font-family:var(--f-display);font-size:1.15rem}
+.b-pause{background:var(--blue);color:#fff} .b-stop{background:var(--ink);color:var(--bg)}
+.sheet{background:var(--surface);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:12px}
+.sheet .row{display:flex;gap:10px;flex-wrap:wrap}
+.sheet .row button{flex:1}
+.notice{background:var(--orange-soft);border-radius:12px;padding:10px 12px;font-size:.9rem}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+@media (max-width:380px){.today{grid-template-columns:1fr;justify-items:center}.today-side{width:100%}}
+</style>
+</head>
+<body>
+
+<div class="app" dir="rtl" lang="he">
+  <header class="top">
+    <div class="brand"><span class="blaze" aria-hidden="true"><i></i><i></i><i></i></span><h1>צעדה</h1></div>
+    <div style="display:flex;gap:8px;align-items:center"><span class="store-chip" id="storeChip">שמור במכשיר</span><span class="date-chip" id="dateChip"></span></div>
+  </header>
+  <main id="view" class="screen"></main>
+</div>
+
+<nav class="tabbar" dir="rtl" aria-label="ניווט">
+  <div class="tabbar-in">
+    <button class="tab" data-tab="today" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 2"/></svg>היום</button>
+    <button class="tab" data-tab="history"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 20V11M12 20V5M19 20v-7"/></svg>היסטוריה</button>
+    <button class="go" id="goBtn" aria-label="התחל הליכה">צא!</button>
+    <button class="tab" data-tab="add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>הוספה</button>
+    <button class="tab" data-tab="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>הגדרות</button>
+  </div>
+</nav>
+
+<section class="live" id="live" hidden dir="rtl" lang="he" aria-label="הליכה פעילה"></section>
+<div class="toast" id="toast" hidden role="status"></div>
+
+<script>
+(function(){
+"use strict";
+/* ---------- utils ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const DAY_LETTERS = ["א׳","ב׳","ג׳","ד׳","ה׳","ו׳","ש׳"];
+const pad = n => String(n).padStart(2,"0");
+const dayKey = t => { const d=new Date(t); return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); };
+const startOfDay = t => { const d=new Date(t); d.setHours(0,0,0,0); return d.getTime(); };
+const fmtDur = ms => { const s=Math.max(0,Math.round(ms/1000)); const h=Math.floor(s/3600), m=Math.floor(s%3600/60), x=s%60; return h? h+":"+pad(m)+":"+pad(x) : pad(m)+":"+pad(x); };
+const fmtMin = ms => { const m=Math.round(ms/60000); return m<60? m+" דק׳" : Math.floor(m/60)+":"+pad(m%60)+" שע׳"; };
+const fmtKm = m => (m/1000).toFixed(m<10000?2:1);
+const fmtInt = n => Math.round(n).toLocaleString("he-IL");
+const paceStr = (ms,m) => { if(m<50) return "–"; const spk=ms/1000/(m/1000); return Math.floor(spk/60)+":"+pad(Math.round(spk%60)); };
+const fmtDate = t => { const d=new Date(t), today=startOfDay(Date.now()), dd=startOfDay(t);
+  if(dd===today) return "היום"; if(dd===today-864e5) return "אתמול";
+  return "יום "+DAY_LETTERS[d.getDay()]+" "+d.getDate()+"."+(d.getMonth()+1); };
+const fmtClock = t => { const d=new Date(t); return pad(d.getHours())+":"+pad(d.getMinutes()); };
+function hav(a,b){ const R=6371000, r=Math.PI/180; const dLa=(b[0]-a[0])*r, dLo=(b[1]-a[1])*r;
+  const x=Math.sin(dLa/2)**2+Math.cos(a[0]*r)*Math.cos(b[0]*r)*Math.sin(dLo/2)**2; return 2*R*Math.asin(Math.sqrt(x)); }
+function css(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+let toastT; function toast(msg){ const t=$("#toast"); t.textContent=msg; t.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>t.hidden=true,2400); }
+
+/* ---------- state & storage ---------- */
+const LS_KEY="tsaada-walk-app-v1";
+const DEFAULTS={goal:8000, stride:72, weight:75};
+const state={ walks:[], settings:{...DEFAULTS}, mode:"local", tab:"today", histRange:"week" };
+let db=null, uid=null;
+
+function lsLoad(){ try{ const raw=localStorage.getItem(LS_KEY); if(raw){ const o=JSON.parse(raw); state.walks=o.walks||[]; state.settings={...DEFAULTS,...(o.settings||{})}; } }catch(e){} }
+function lsSave(){ try{ localStorage.setItem(LS_KEY, JSON.stringify({walks:state.walks, settings:state.settings})); }catch(e){} }
+function col(){ return db.collection("data/users/"+uid); }
+
+async function connectDb(){
+  if(!window.claude || typeof window.claude.use!=="function") return;
+  try{
+    const [d,u]=await Promise.all([window.claude.use("db"), window.claude.use("user")]);
+    if(!d||!u) return;
+    const id=await u.id(); if(!id) return;
+    db=d; uid=id;
+    const snap=await col().get();
+    const remote=[]; let remoteSettings=null;
+    snap.docs.forEach(doc=>{ const v=doc.data(); if(!v) return; if(doc.id==="settings") remoteSettings=v; else if(v.kind==="walk") remote.push(v); });
+    const have=new Set(remote.map(w=>w.id));
+    const localOnly=state.walks.filter(w=>!have.has(w.id));
+    for(const w of localOnly){ try{ await col().doc(w.id).set(w); }catch(e){} }
+    state.walks=remote.concat(localOnly);
+    if(remoteSettings) state.settings={...DEFAULTS,...remoteSettings};
+    else { try{ await col().doc("settings").set({...state.settings}); }catch(e){} }
+    state.mode="db"; lsSave(); render();
+  }catch(e){ db=null; uid=null; }
+}
+async function saveWalk(w){
+  state.walks.push(w); lsSave();
+  if(db){ try{ await col().doc(w.id).set(w); }catch(e){ toast("השמירה לענן נכשלה – ההליכה נשמרה במכשיר"); } }
+}
+async function deleteWalk(id){
+  state.walks=state.walks.filter(w=>w.id!==id); lsSave();
+  if(db){ try{ await col().doc(id).delete(); }catch(e){} }
+}
+async function saveSettings(){
+  lsSave();
+  if(db){ try{ await col().doc("settings").set({...state.settings}); }catch(e){} }
+}
+
+/* ---------- derived ---------- */
+const stepsFor = w => w.steps!=null ? w.steps : Math.round(w.distance/(state.settings.stride/100));
+const kcalFor = w => Math.round(0.53*state.settings.weight*(w.distance/1000));
+
+/* Example walks shown only while no walk is stored. Never saved. */
+function exampleWalks(){
+  const out=[], now=Date.now(); let seed=7;
+  const rnd=()=>{ seed=(seed*9301+49297)%233280; return seed/233280; };
+  const plan=[[0,2.1,17.5],[1,5.4,9.5],[2,4.8,8],[3,0,0],[4,6.2,7.5],[5,3.1,18],[6,5.9,8.5],[8,4.2,19],[9,7.0,7]];
+  for(const [daysAgo,km,hour] of plan){ if(!km) continue;
+    const start=startOfDay(now)-daysAgo*864e5+hour*3600e3; if(start>now) continue;
+    const dist=km*1000, dur=dist/1.33*1000;
+    out.push({id:"ex"+daysAgo, kind:"walk", start, duration:dur, distance:dist, route:fakeRoute(dist,rnd), source:"example"});
+  }
+  return out;
+}
+function fakeRoute(dist,rnd){
+  const pts=[]; let lat=32.0853, lon=34.7818, h=rnd()*Math.PI*2; const step=25, n=Math.max(8,Math.round(dist/step));
+  for(let i=0;i<n;i++){ pts.push([+lat.toFixed(6),+lon.toFixed(6)]);
+    h += (i>n/2? 0.11:0.05) + (rnd()-.5)*.5; lat+=Math.cos(h)*step/111320; lon+=Math.sin(h)*step/(111320*Math.cos(lat*Math.PI/180)); }
+  return pts;
+}
+function displayWalks(){ return state.walks.length? state.walks : exampleWalks(); }
+function isExample(){ return state.walks.length===0; }
+
+function dayTotals(walks){
+  const m={}; for(const w of walks){ const k=dayKey(w.start); const t=m[k]||(m[k]={steps:0,dist:0,dur:0,n:0});
+    t.steps+=stepsFor(w); t.dist+=w.distance; t.dur+=w.duration; t.n++; } return m;
+}
+function streak(totals){
+  const goal=state.settings.goal; let n=0; let d=startOfDay(Date.now());
+  if(!((totals[dayKey(d)]||{}).steps>=goal)) d-=864e5;
+  while((totals[dayKey(d)]||{}).steps>=goal){ n++; d-=864e5; }
+  return n;
+}
+
+/* ---------- route drawing ---------- */
+function drawRoute(canvas, pts, opts={}){
+  const dpr=window.devicePixelRatio||1, W=canvas.clientWidth, H=canvas.clientHeight; if(!W||!H) return null;
+  canvas.width=W*dpr; canvas.height=H*dpr; const c=canvas.getContext("2d"); c.setTransform(dpr,0,0,dpr,0,0); c.clearRect(0,0,W,H);
+  const line=css("--line"), orange=css("--orange"), blue=css("--blue"), white=css("--blaze-white");
+  if(!pts||pts.length<1) return null;
+  const lat0=pts[0][0], k=Math.cos(lat0*Math.PI/180);
+  const xy=pts.map(p=>[(p[1]-pts[0][1])*111320*k, -(p[0]-lat0)*111320]);
+  let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
+  for(const [x,y] of xy){minX=Math.min(minX,x);maxX=Math.max(maxX,x);minY=Math.min(minY,y);maxY=Math.max(maxY,y);}
+  const spanX=Math.max(maxX-minX,60), spanY=Math.max(maxY-minY,60), padP=opts.pad??14;
+  const s=Math.min((W-2*padP)/spanX,(H-2*padP)/spanY);
+  const ox=(W-(maxX-minX)*s)/2-minX*s, oy=(H-(maxY-minY)*s)/2-minY*s;
+  const P=([x,y])=>[x*s+ox,y*s+oy];
+  if(opts.grid){ // 100 m survey grid
+    const g=100*s; if(g>14){ c.strokeStyle=line; c.lineWidth=1; c.beginPath();
+      for(let x=ox%g;x<W;x+=g){c.moveTo(x,0);c.lineTo(x,H);} for(let y=oy%g;y<H;y+=g){c.moveTo(0,y);c.lineTo(W,y);} c.stroke(); }
+  }
+  c.lineJoin="round"; c.lineCap="round"; c.strokeStyle=orange; c.lineWidth=opts.width||3.5; c.beginPath();
+  xy.forEach((p,i)=>{ const [x,y]=P(p); i?c.lineTo(x,y):c.moveTo(x,y); }); c.stroke();
+  const [sx,sy]=P(xy[0]); const bw=opts.small?6:9, bh=opts.small?7:11; // start: trail blaze
+  [[white,0],[blue,1],[orange,2]].forEach(([col,i])=>{ c.fillStyle=col; c.fillRect(sx-bw/2,sy-bh/2+i*bh/3,bw,bh/3); });
+  c.strokeStyle=css("--ink"); c.lineWidth=1; c.strokeRect(sx-bw/2,sy-bh/2,bw,bh);
+  if(opts.live){ const [ex,ey]=P(xy[xy.length-1]); c.fillStyle=blue; c.beginPath(); c.arc(ex,ey,7,0,7); c.fill(); c.strokeStyle=white; c.lineWidth=2.5; c.stroke(); }
+  return s;
+}
+
+/* ---------- views ---------- */
+function ringSVG(frac){
+  const r=62, C=2*Math.PI*r, f=Math.min(frac,1);
+  return `<svg viewBox="0 0 150 150" aria-hidden="true"><circle cx="75" cy="75" r="${r}" fill="none" stroke="var(--sunk)" stroke-width="13"/>
+  <circle cx="75" cy="75" r="${r}" fill="none" stroke="var(--orange)" stroke-width="13" stroke-linecap="round" stroke-dasharray="${C*f} ${C}"/>
+  ${frac>1?`<circle cx="75" cy="75" r="${r}" fill="none" stroke="var(--blue)" stroke-width="5" stroke-dasharray="${C*Math.min(frac-1,1)} ${C}"/>`:""}</svg>`;
+}
+function exampleBanner(){
+  return isExample()? `<div class="banner"><span class="blaze" aria-hidden="true"><i></i><i></i><i></i></span><div><b>אלה נתוני דוגמה.</b> הם ייעלמו ברגע שתשמור את ההליכה הראשונה שלך.</div></div>`:"";
+}
+function walkRow(w, actions){
+  const steps=stepsFor(w);
+  return `<div class="walk" data-id="${esc(w.id)}"><canvas data-route="${esc(w.id)}" aria-hidden="true"></canvas>
+   <div class="walk-main"><div class="walk-title"><b>${fmtDate(w.start)} · ${fmtClock(w.start)}</b>
+   <span class="tag ${w.source==="gps"?"gps":""}">${w.source==="gps"?"GPS":w.source==="manual"?"ידני":"דוגמה"}</span></div>
+   <div class="walk-stats"><span><span class="num">${fmtKm(w.distance)}</span> ק״מ</span><span><span class="num">${fmtMin(w.duration)}</span></span>
+   <span><span class="num">${paceStr(w.duration,w.distance)}</span> דק׳/ק״מ</span><span><span class="num">${fmtInt(steps)}</span> צעדים</span></div>
+   ${actions&&!isExample()?`<div class="walk-actions"><button class="btn small danger" data-del="${esc(w.id)}">מחק</button></div>`:""}</div></div>`;
+}
+function paintRoutes(list){
+  document.querySelectorAll("canvas[data-route]").forEach(cv=>{ const w=list.find(x=>x.id===cv.dataset.route);
+    if(w&&w.route&&w.route.length>1) drawRoute(cv,w.route,{small:true,pad:8,width:2.5});
+    else { const c=cv.getContext("2d"); cv.width=cv.clientWidth; cv.height=cv.clientHeight; c.fillStyle=css("--muted"); c.font="700 11px Assistant"; c.textAlign="center"; c.fillText("ללא מסלול",cv.width/2,cv.height/2+4); } });
+}
+
+function viewToday(){
+  const walks=displayWalks(), totals=dayTotals(walks), today=totals[dayKey(Date.now())]||{steps:0,dist:0,dur:0,n:0};
+  const goal=state.settings.goal, frac=today.steps/goal, st=streak(totals);
+  const dots=[]; for(let i=6;i>=0;i--){ const d=startOfDay(Date.now())-i*864e5; const t=totals[dayKey(d)];
+    dots.push(`<span class="dot ${t&&t.steps>=goal?"hit":""} ${i===0?"today":""}" title="${dayKey(d)}">${DAY_LETTERS[new Date(d).getDay()]}</span>`); }
+  const recent=walks.slice().sort((a,b)=>b.start-a.start).slice(0,3);
+  const left=Math.max(0,goal-today.steps), minsLeft=Math.ceil(left*state.settings.stride/100/1.33/60);
+  return `${exampleBanner()}
+  <section class="card"><div class="today">
+    <div class="ring">${ringSVG(frac)}<div class="center"><span class="big num">${fmtInt(today.steps)}</span><span class="of">מתוך <span class="num">${fmtInt(goal)}</span> צעדים</span></div></div>
+    <div class="today-side">
+      <div class="kv"><span class="label">מרחק</span><span class="v num">${fmtKm(today.dist)}<small>ק״מ</small></span></div>
+      <div class="kv"><span class="label">זמן הליכה</span><span class="v num">${Math.round(today.dur/60000)}<small>דק׳</small></span></div>
+      <div class="kv"><span class="label">קלוריות (הערכה)</span><span class="v num">${fmtInt(0.53*state.settings.weight*today.dist/1000)}<small>קק״ל</small></span></div>
+    </div></div>
+    <p class="muted" style="margin:12px 0 0;font-size:.95rem">${left? `עוד <b class="num" style="color:var(--ink);font-size:1.1rem">${fmtInt(left)}</b> צעדים ליעד – בערך ${minsLeft} דקות הליכה.` : "היעד היומי הושג. כל צעד מעכשיו הוא בונוס."}</p>
+  </section>
+  <section class="card streak"><div><div class="label">רצף ימים ביעד</div><div class="count num">${st}</div></div><div class="dots">${dots.join("")}</div></section>
+  <button class="cta" data-start>התחל הליכה</button>
+  <section class="card"><div class="chart-head"><h2 style="font-size:1.15rem">הליכות אחרונות</h2><button class="btn small" data-tab-go="history">הכול</button></div>
+    ${recent.length? recent.map(w=>walkRow(w,false)).join("") : `<p class="muted">עוד אין הליכות. לחץ על ״צא!״ כדי להתחיל.</p>`}</section>`;
+}
+
+function viewHistory(){
+  const walks=displayWalks(), totals=dayTotals(walks), goal=state.settings.goal;
+  const range=state.histRange, days=range==="week"?7:30;
+  const bars=[]; let maxV=goal*1.2;
+  for(let i=days-1;i>=0;i--){ const d=startOfDay(Date.now())-i*864e5; const t=totals[dayKey(d)]; const v=t?t.steps:0; maxV=Math.max(maxV,v); bars.push({d,v}); }
+  const W=340,H=170,L=34,B=22,T=10, cw=(W-L-6)/days, y=v=>T+(H-T-B)*(1-v/maxV);
+  const ticks=[0,Math.round(maxV/2/1000)*1000,Math.floor(maxV/1000)*1000].filter((v,i,a)=>a.indexOf(v)===i);
+  let svg=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="צעדים לפי יום">`;
+  ticks.forEach(v=>{ svg+=`<line x1="${L}" x2="${W}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-width="1"/><text x="${L-5}" y="${y(v)+4}" text-anchor="end" font-size="10" fill="var(--muted)" font-family="Barlow Condensed">${v>=1000?(v/1000)+"K":v}</text>`; });
+  bars.forEach((b,i)=>{ const x=L+i*cw+cw*.15, w=cw*.7, hit=b.v>=goal; const yy=y(b.v);
+    svg+=`<rect x="${x}" y="${yy}" width="${w}" height="${Math.max(0,H-B-yy)}" rx="${Math.min(4,w/2)}" fill="${hit?"var(--orange)":"var(--blue)"}" opacity="${b.v?1:0}"/>`;
+    if(days===7||i%5===0||i===days-1){ const dd=new Date(b.d); svg+=`<text x="${x+w/2}" y="${H-6}" text-anchor="middle" font-size="10.5" fill="var(--muted)" font-family="Assistant" font-weight="700">${days===7?DAY_LETTERS[dd.getDay()]:dd.getDate()+"."+(dd.getMonth()+1)}</text>`; } });
+  svg+=`<line x1="${L}" x2="${W}" y1="${y(goal)}" y2="${y(goal)}" stroke="var(--ink)" stroke-width="1.5" stroke-dasharray="4 3"/><text x="${W-2}" y="${y(goal)-4}" text-anchor="end" font-size="10.5" fill="var(--ink)" font-family="Assistant" font-weight="700">יעד ${fmtInt(goal)}</text></svg>`;
+  const since=startOfDay(Date.now())-(days-1)*864e5, inR=walks.filter(w=>w.start>=since);
+  const sumDist=inR.reduce((a,w)=>a+w.distance,0), sumDur=inR.reduce((a,w)=>a+w.duration,0), sumSteps=inR.reduce((a,w)=>a+stepsFor(w),0);
+  const hitDays=bars.filter(b=>b.v>=goal).length;
+  const list=walks.slice().sort((a,b)=>b.start-a.start);
+  return `${exampleBanner()}
+  <section class="card chart"><div class="chart-head"><h2 style="font-size:1.15rem">צעדים לפי יום</h2>
+    <div class="seg" role="group" aria-label="טווח"><button data-range="week" aria-pressed="${range==="week"}">7 ימים</button><button data-range="month" aria-pressed="${range==="month"}">30 ימים</button></div></div>
+    ${svg}<p class="muted" style="margin:6px 0 0;font-size:.88rem"><span style="color:var(--orange);font-weight:800">■</span> יום ביעד · <span style="color:var(--blue);font-weight:800">■</span> מתחת ליעד · ${hitDays} מתוך ${days} ימים ביעד</p></section>
+  <section class="totals">
+    <div class="total"><div class="label">ק״מ</div><div class="v num">${fmtKm(sumDist)}</div></div>
+    <div class="total"><div class="label">שעות</div><div class="v num">${(sumDur/3600000).toFixed(1)}</div></div>
+    <div class="total"><div class="label">צעדים</div><div class="v num">${fmtInt(sumSteps)}</div></div>
+  </section>
+  <section class="card"><div class="chart-head"><h2 style="font-size:1.15rem">כל ההליכות</h2><span class="muted num">${list.length}</span></div>
+    ${list.length? list.map(w=>walkRow(w,true)).join("") : `<p class="muted">עוד אין הליכות.</p>`}</section>`;
+}
+
+function viewAdd(){
+  const d=new Date(); const dv=d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+  return `<section class="card" style="display:flex;flex-direction:column;gap:14px">
+    <h2 style="font-size:1.25rem">הוספת הליכה ידנית</h2>
+    <p class="muted" style="margin:0">להליכות שלא נמדדו באפליקציה – למשל מהשעון או מהליכון.</p>
+    <form id="addForm" style="display:flex;flex-direction:column;gap:12px">
+      <div class="grid2"><div class="field"><label for="fDate">תאריך</label><input id="fDate" type="date" value="${dv}" max="${dv}" required></div>
+      <div class="field"><label for="fTime">שעה</label><input id="fTime" type="time" value="${pad(d.getHours())}:00" required></div></div>
+      <div class="grid2"><div class="field"><label for="fKm">מרחק (ק״מ)</label><input id="fKm" type="number" inputmode="decimal" step="0.01" min="0.1" max="100" value="3.5" required></div>
+      <div class="field"><label for="fMin">משך (דקות)</label><input id="fMin" type="number" inputmode="numeric" step="1" min="1" max="1440" value="45" required></div></div>
+      <div class="field"><label for="fSteps">צעדים (לא חובה)</label><input id="fSteps" type="number" inputmode="numeric" min="0" placeholder="יחושב מאורך הצעד"><span class="hint">ריק = חישוב לפי אורך צעד של ${state.settings.stride} ס״מ</span></div>
+      <button class="btn primary" type="submit" style="padding:14px">שמור הליכה</button>
+    </form></section>`;
+}
+
+function viewSettings(){
+  const s=state.settings;
+  return `<section class="card" style="display:flex;flex-direction:column;gap:14px">
+    <h2 style="font-size:1.25rem">הגדרות</h2>
+    <form id="setForm" style="display:flex;flex-direction:column;gap:12px">
+      <div class="field"><label for="sGoal">יעד צעדים יומי</label><input id="sGoal" type="number" inputmode="numeric" min="500" max="60000" step="500" value="${s.goal}"></div>
+      <div class="grid2"><div class="field"><label for="sStride">אורך צעד (ס״מ)</label><input id="sStride" type="number" inputmode="numeric" min="40" max="120" value="${s.stride}"><span class="hint">גובה בס״מ × 0.415 בערך</span></div>
+      <div class="field"><label for="sWeight">משקל (ק״ג)</label><input id="sWeight" type="number" inputmode="numeric" min="30" max="250" value="${s.weight}"><span class="hint">להערכת קלוריות</span></div></div>
+      <button class="btn primary" type="submit" style="padding:14px">שמור הגדרות</button>
+    </form></section>
+  ${installEvt?`<section class="card" style="display:flex;flex-direction:column;gap:10px">
+    <h2 style="font-size:1.1rem">התקנה במסך הבית</h2>
+    <p class="muted" style="margin:0">פתיחה במסך מלא, עם אייקון משלה, גם בלי אינטרנט.</p>
+    <button class="btn primary" data-act="install" style="padding:12px">התקן את צעדה</button></section>`:""}
+  <section class="card" style="display:flex;flex-direction:column;gap:10px">
+    <h2 style="font-size:1.1rem">גיבוי</h2>
+    <p class="muted" style="margin:0">ההליכות שמורות רק בדפדפן בטלפון הזה. ניקוי נתוני כרום או החלפת טלפון ימחקו אותן, אז כדאי לשמור גיבוי מדי פעם.</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn" data-act="export">שמור קובץ גיבוי</button>
+    <label class="btn" for="importFile" style="cursor:pointer">שחזר מגיבוי</label><input id="importFile" type="file" accept="application/json,.json" hidden></div>
+  </section>
+  <section class="card" style="display:flex;flex-direction:column;gap:8px">
+    <h2 style="font-size:1.1rem">איך נספרים צעדים</h2>
+    <p class="muted" style="margin:0">בזמן הליכה עם המסך דלוק, חיישן התנועה של הטלפון סופר צעדים בפועל. כשהחיישן לא זמין, הצעדים מחושבים מהמרחק ב־GPS חלקי אורך הצעד שלך. כדי לכייל, מדוד 10 צעדים רגילים בסרט מדידה וחלק ב־10.</p>
+  </section>`;
+}
+
+function render(){
+  $("#dateChip").textContent=new Date().toLocaleDateString("he-IL",{weekday:"long",day:"numeric",month:"long"});
+  $("#storeChip").textContent= state.mode==="db" ? "מסונכרן לחשבון" : "שמור במכשיר";
+  document.querySelectorAll(".tab").forEach(b=>b.setAttribute("aria-current", b.dataset.tab===state.tab?"page":"false"));
+  const v=$("#view");
+  v.innerHTML = state.tab==="history"?viewHistory() : state.tab==="add"?viewAdd() : state.tab==="settings"?viewSettings() : viewToday();
+  paintRoutes(displayWalks());
+}
+
+/* ---------- events ---------- */
+document.addEventListener("click", async e=>{
+  const t=e.target.closest("button"); if(!t) return;
+  if(t.dataset.tab){ state.tab=t.dataset.tab; render(); window.scrollTo(0,0); }
+  else if(t.dataset.tabGo){ state.tab=t.dataset.tabGo; render(); window.scrollTo(0,0); }
+  else if(t.dataset.range){ state.histRange=t.dataset.range; render(); }
+  else if(t.dataset.start!==undefined || t.id==="goBtn"){ openLive(); }
+  else if(t.dataset.act==="install"&&installEvt){ installEvt.prompt(); try{ await installEvt.userChoice; }catch(e){} installEvt=null; render(); }
+  else if(t.dataset.act==="export"){ exportBackup(); }
+  else if(t.dataset.del){ if(t.dataset.armed){ await deleteWalk(t.dataset.del); toast("ההליכה נמחקה"); render(); }
+    else { t.dataset.armed="1"; t.textContent="לחץ שוב למחיקה"; setTimeout(()=>{ if(t.isConnected){ delete t.dataset.armed; t.textContent="מחק"; } },3000); } }
+});
+document.addEventListener("submit", async e=>{
+  e.preventDefault();
+  if(e.target.id==="addForm"){
+    const start=new Date($("#fDate").value+"T"+$("#fTime").value).getTime();
+    const km=parseFloat($("#fKm").value), min=parseFloat($("#fMin").value), st=$("#fSteps").value;
+    if(!(km>0)||!(min>0)||isNaN(start)){ toast("בדוק את המרחק והמשך"); return; }
+    await saveWalk({id:"w"+start+"_"+Math.random().toString(36).slice(2,6), kind:"walk", start, duration:min*60000, distance:km*1000, steps: st?parseInt(st,10):null, route:null, source:"manual"});
+    toast("ההליכה נשמרה"); state.tab="history"; render();
+  } else if(e.target.id==="setForm"){
+    const g=parseInt($("#sGoal").value,10), s=parseInt($("#sStride").value,10), w=parseInt($("#sWeight").value,10);
+    state.settings={goal: g>=500?g:DEFAULTS.goal, stride: s>=40&&s<=120?s:DEFAULTS.stride, weight: w>=30?w:DEFAULTS.weight};
+    await saveSettings(); toast("ההגדרות נשמרו"); state.tab="today"; render();
+  }
+});
+
+/* ---------- backup ---------- */
+let installEvt=null;
+function exportBackup(){
+  const data=JSON.stringify({app:"tsaada",version:1,exported:new Date().toISOString(),settings:state.settings,walks:state.walks});
+  const url=URL.createObjectURL(new Blob([data],{type:"application/json"}));
+  const a=document.createElement("a"); a.href=url; a.download="tsaada-backup-"+dayKey(Date.now())+".json";
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),5000);
+  toast("קובץ הגיבוי נשמר בהורדות");
+}
+document.addEventListener("change", e=>{
+  if(e.target.id!=="importFile"||!e.target.files[0]) return;
+  const r=new FileReader();
+  r.onload=async()=>{
+    try{
+      const o=JSON.parse(r.result); if(o.app!=="tsaada"||!Array.isArray(o.walks)) throw 0;
+      const have=new Set(state.walks.map(w=>w.id)); let n=0;
+      for(const w of o.walks){ if(w&&w.id&&w.kind==="walk"&&!have.has(w.id)){ state.walks.push(w); n++; } }
+      if(o.settings) state.settings={...DEFAULTS,...o.settings};
+      await saveSettings(); lsSave(); toast(n? "שוחזרו "+n+" הליכות" : "כל ההליכות בגיבוי כבר קיימות"); render();
+    }catch(err){ toast("הקובץ הזה אינו גיבוי של צעדה"); }
+  };
+  r.readAsText(e.target.files[0]);
+});
+
+/* ---------- pedometer (device motion, screen on) ---------- */
+const PED={steps:0,seen:false,base:null,f:null,above:false,lastPeak:0,h:null};
+function startPed(){
+  Object.assign(PED,{steps:0,seen:false,base:null,f:null,above:false,lastPeak:0});
+  PED.h=e=>{
+    const a=e.accelerationIncludingGravity; if(!a||a.x==null) return; PED.seen=true;
+    const m=Math.sqrt(a.x*a.x+a.y*a.y+a.z*a.z);
+    PED.f = PED.f==null? m : PED.f*0.6+m*0.4;          // smooth jitter
+    PED.base = PED.base==null? m : PED.base*0.97+m*0.03; // gravity baseline
+    const d=PED.f-PED.base, now=e.timeStamp||performance.now();
+    if(!PED.above && d>1.1 && now-PED.lastPeak>300){ PED.above=true; PED.lastPeak=now; if(!L.paused&&!L.demo) PED.steps++; }
+    else if(PED.above && d<0.25) PED.above=false;
+  };
+  try{
+    if(typeof DeviceMotionEvent!=="undefined" && typeof DeviceMotionEvent.requestPermission==="function"){
+      DeviceMotionEvent.requestPermission().then(s=>{ if(s==="granted") window.addEventListener("devicemotion",PED.h); }).catch(()=>{});
+    } else window.addEventListener("devicemotion",PED.h);
+  }catch(e){}
+}
+function stopPed(){ if(PED.h) window.removeEventListener("devicemotion",PED.h); PED.h=null; }
+function liveSteps(){
+  const est=L.dist/(state.settings.stride/100);
+  const sensor = PED.seen && !L.demo && PED.steps>=20 && PED.steps>=est*0.5;
+  return {n: sensor?PED.steps:est, sensor};
+}
+
+/* ---------- live walk ---------- */
+const L={ on:false, demo:false, paused:false, startAt:0, accMs:0, segStart:0, dist:0, route:[], last:null, watch:null, tick:null, wake:null, acc:null, gps:"wait", sheet:false, demoT:null };
+function elapsed(){ return L.accMs + (L.paused||!L.segStart?0:(Date.now()-L.segStart)*(L.demo?10:1)); }
+
+function openLive(){
+  Object.assign(L,{on:true,demo:false,paused:false,startAt:Date.now(),accMs:0,segStart:Date.now(),dist:0,route:[],last:null,acc:null,gps:"wait",sheet:false,gpsErr:null});
+  $("#live").hidden=false; document.body.style.overflow="hidden";
+  startPed(); renderLive(); startGPS(); L.tick=setInterval(updateLive,1000);
+  requestWake();
+}
+async function requestWake(){ try{ if("wakeLock" in navigator) L.wake=await navigator.wakeLock.request("screen"); }catch(e){} }
+function releaseWake(){ try{ L.wake&&L.wake.release(); }catch(e){} L.wake=null; }
+document.addEventListener("visibilitychange",()=>{ if(L.on&&document.visibilityState==="visible") requestWake(); });
+
+function startGPS(){
+  if(!("geolocation" in navigator)){ L.gps="off"; renderLive(); return; }
+  try{
+    L.watch=navigator.geolocation.watchPosition(onPos, err=>{ if(err&&err.code===3&&L.acc!=null) return; L.gps="off"; L.gpsErr=err&&err.code; renderLive(); },
+      {enableHighAccuracy:true, maximumAge:0, timeout:20000});
+  }catch(e){ L.gps="off"; renderLive(); }
+}
+function stopGPS(){ if(L.watch!=null){ try{ navigator.geolocation.clearWatch(L.watch); }catch(e){} L.watch=null; } }
+function onPos(p){
+  const was=L.gps, acc=p.coords.accuracy; L.acc=acc; L.gps= acc<=20?"ok":"weak";
+  if(was==="off"){ L.gpsErr=null; renderLive(); }
+  if(L.paused||L.demo) { updateLive(); return; }
+  if(acc>40){ updateLive(); return; }
+  addPoint([p.coords.latitude,p.coords.longitude], p.timestamp);
+}
+function addPoint(pt,ts){
+  if(!L.last){ L.route.push(pt); L.last={pt,ts}; updateLive(true); return; }
+  const d=hav(L.last.pt,pt), dt=Math.max(1,(ts-L.last.ts)/1000);
+  if(d<4) return;                 // GPS jitter while standing
+  if(!L.demo && d/dt>7) return;   // jumps faster than ~25 km/h
+  L.dist+=d; L.route.push(pt); L.last={pt,ts}; updateLive(true);
+}
+function startDemo(){
+  stopGPS(); L.demo=true; L.gps="demo"; L.accMs=0; L.segStart=Date.now(); L.dist=0; L.route=[]; L.last=null;
+  let lat=32.0853, lon=34.7818, h=0.6, t=Date.now(), i=0;
+  clearInterval(L.demoT);
+  L.demoT=setInterval(()=>{ if(L.paused) return; i++; h+= (i%40<20?0.06:-0.03)+(Math.random()-.5)*.25;
+    const step=13.4; lat+=Math.cos(h)*step/111320; lon+=Math.sin(h)*step/(111320*Math.cos(lat*Math.PI/180)); t+=10000;
+    addPoint([lat,lon],t); },1000);
+  renderLive();
+}
+function togglePause(){
+  if(L.paused){ L.paused=false; L.segStart=Date.now(); L.last=null; }
+  else { L.accMs=elapsed(); L.paused=true; L.segStart=0; }
+  renderLive();
+}
+function closeLive(){
+  stopGPS(); stopPed(); clearInterval(L.tick); clearInterval(L.demoT); releaseWake();
+  L.on=false; $("#live").hidden=true; $("#live").innerHTML=""; document.body.style.overflow="";
+}
+async function finishSave(){
+  const dur=elapsed(), ls=liveSteps();
+  const route = L.route.length>600 ? L.route.filter((_,i)=>i%Math.ceil(L.route.length/600)===0) : L.route;
+  const w={id:"w"+L.startAt+"_"+Math.random().toString(36).slice(2,6), kind:"walk", start:L.startAt, duration:dur, distance:Math.round(L.dist),
+    steps: ls.sensor?ls.n:null, route: route.map(p=>[+p[0].toFixed(6),+p[1].toFixed(6)]), source:"gps"};
+  closeLive(); await saveWalk(w); toast("ההליכה נשמרה"); state.tab="today"; render();
+}
+
+function gpsChip(){
+  if(L.gps==="demo") return `<span class="gps weak"><i></i>הדגמה ×10</span>`;
+  if(L.gps==="off") return `<span class="gps off"><i></i>אין GPS</span>`;
+  if(L.gps==="wait") return `<span class="gps"><i></i>מחפש GPS…</span>`;
+  return `<span class="gps ${L.gps}"><i></i>דיוק ±${Math.round(L.acc)} מ׳</span>`;
+}
+function renderLive(){
+  const sec=$("#live"); if(!L.on) return;
+  const sheet = L.sheet ? `<div class="sheet"><h3 style="font-size:1.2rem">לסיים את ההליכה?</h3>
+     <p class="muted" style="margin:0"><span class="num" style="color:var(--ink);font-size:1.1rem">${fmtKm(L.dist)}</span> ק״מ ב־<span class="num" style="color:var(--ink);font-size:1.1rem">${fmtDur(elapsed())}</span></p>
+     ${L.demo?`<p class="notice" style="margin:0">זו הדגמה – היא לא תישמר בהיסטוריה.</p>`:""}
+     <div class="row">${L.demo?"":`<button class="btn primary" data-live="save">שמור</button>`}<button class="btn" data-live="resume">המשך ללכת</button><button class="btn danger" data-live="discard">${L.demo?"סיים הדגמה":"מחק"}</button></div></div>` :
+    `<div class="live-ctrl"><button class="b-pause" data-live="pause">${L.paused?"המשך":"השהה"}</button><button class="b-stop" data-live="stop">סיום</button></div>`;
+  const offTxt = !window.isSecureContext ? "מיקום עובד רק בכתובת https:// – פתח את האפליקציה מהכתובת של GitHub Pages."
+    : L.gpsErr===1 ? "אין הרשאת מיקום. בכרום: לחץ על סמל המנעול ליד הכתובת ← הרשאות ← מיקום ← אפשר. ודא גם שהמיקום בטלפון דלוק."
+    : "לא מתקבל אות GPS. ודא שהמיקום בטלפון דלוק ונסה במקום פתוח.";
+  const offMsg = L.gps==="off" && !L.demo ? `<div class="notice">${offTxt} אפשר גם <button class="btn small" data-live="demo">לנסות הדגמה</button>.</div>` : "";
+  sec.innerHTML=`<div class="live-in">
+    <div class="live-top"><div class="brand"><span class="blaze" aria-hidden="true"><i></i><i></i><i></i></span><h2 style="font-size:1.2rem">${L.paused?"בהפסקה":"בהליכה"}</h2></div>${gpsChip()}</div>
+    ${offMsg}
+    <div class="map"><canvas id="liveMap" aria-label="מפת המסלול"></canvas><span class="scale" id="scale"></span>
+      ${L.route.length<2?`<div class="empty">${L.gps==="off"&&!L.demo?"המסלול יופיע כאן":"המסלול יופיע כאן אחרי כמה צעדים"}</div>`:""}</div>
+    <div class="timer num" id="lvTime">${fmtDur(elapsed())}</div>
+    <div class="live-stats">
+      <div><div class="v num" id="lvDist">${fmtKm(L.dist)}</div><div class="k">ק״מ</div></div>
+      <div><div class="v num" id="lvPace">${paceStr(elapsed(),L.dist)}</div><div class="k">דק׳/ק״מ</div></div>
+      <div><div class="v num" id="lvSteps">${fmtInt(liveSteps().n)}</div><div class="k" id="lvStepsK">${liveSteps().sensor?"צעדים · חיישן":"צעדים · הערכה"}</div></div>
+    </div>${sheet}</div>`;
+  drawLiveMap();
+}
+function drawLiveMap(){
+  const cv=$("#liveMap"); if(!cv) return;
+  const s=drawRoute(cv,L.route,{grid:true,live:true,pad:28,width:5});
+  const sc=$("#scale"); if(sc) sc.textContent = s ? "משבצת = 100 מ׳" : "";
+}
+function updateLive(redraw){
+  if(!L.on) return;
+  const set=(id,v)=>{ const el=$(id); if(el) el.textContent=v; };
+  set("#lvTime",fmtDur(elapsed())); set("#lvDist",fmtKm(L.dist)); set("#lvPace",paceStr(elapsed(),L.dist)); const ls=liveSteps(); set("#lvSteps",fmtInt(ls.n)); set("#lvStepsK",ls.sensor?"צעדים · חיישן":"צעדים · הערכה");
+  const chip=document.querySelector(".live .gps"); if(chip) chip.outerHTML=gpsChip();
+  if(redraw){ if(L.route.length===2) renderLive(); else drawLiveMap(); }
+}
+$("#live").addEventListener("click",e=>{
+  const b=e.target.closest("[data-live]"); if(!b) return; const a=b.dataset.live;
+  if(a==="pause") togglePause();
+  else if(a==="stop"){ if(!L.paused) togglePause(); L.sheet=true; renderLive(); }
+  else if(a==="resume"){ L.sheet=false; if(L.paused) togglePause(); else renderLive(); }
+  else if(a==="save"){ if(L.dist<20 && L.route.length<2){ toast("לא נמדד מרחק – אין מה לשמור"); return; } finishSave(); }
+  else if(a==="discard"){ closeLive(); toast(L.demo?"ההדגמה הסתיימה":"ההליכה נמחקה"); render(); }
+  else if(a==="demo") startDemo();
+});
+window.addEventListener("resize",()=>{ if(L.on) drawLiveMap(); else paintRoutes(displayWalks()); });
+
+/* ---------- boot ---------- */
+lsLoad(); render(); connectDb();
+if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{ if(!L.on) paintRoutes(displayWalks()); });
+if("serviceWorker" in navigator && window.isSecureContext){ navigator.serviceWorker.register("sw.js").catch(()=>{}); }
+try{ navigator.storage && navigator.storage.persist && navigator.storage.persist(); }catch(e){}
+window.addEventListener("beforeinstallprompt",e=>{ e.preventDefault(); installEvt=e; if(state.tab==="settings") render(); });
+window.addEventListener("appinstalled",()=>{ installEvt=null; toast("האפליקציה הותקנה"); if(state.tab==="settings") render(); });
+})();
+</script>
+</body>
+</html>

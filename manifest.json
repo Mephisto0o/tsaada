@@ -1,0 +1,18 @@
+{
+  "name": "צעדה – מעקב הליכה",
+  "short_name": "צעדה",
+  "description": "מעקב הליכה: מסלול GPS, ספירת צעדים, יעד יומי והיסטוריה",
+  "lang": "he",
+  "dir": "rtl",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#16201B",
+  "theme_color": "#16201B",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
